@@ -162,8 +162,6 @@ async function startStreaming(gladiaKey, audioFile, uiElements) {
       callbackURL
     );
 
-    console.log(config);
-
     const { url } = await initiateSession(gladiaKey, config);
     const socketPromise = deferredPromise();
 
