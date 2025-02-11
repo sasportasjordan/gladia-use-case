@@ -33,8 +33,7 @@ async function extractAudioFileData(audio) {
   } else {
     throw new Error("Unsupported encoding");
   }
-  // const channels = dataview.getUint16(22, true);
-  const channels = 2;
+  const channels = dataview.getUint16(22, true);
   const sample_rate = dataview.getUint32(24, true);
   const bit_depth = dataview.getUint16(34, true);
 
