@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Gladia - Live from file</title>
+    <style>
+      body {
+        margin: 1rem;
+      }
+      form {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+      form > div {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+      form,
+      #result {
+        box-sizing: border-box;
+        max-width: 500px;
+        margin: 0 auto;
+      }
+      #result {
+        margin-top: 1rem;
+        border-top: 1px solid #333;
+        padding-top: 1rem;
+        text-align: justify;
+      }
+    </style>
+  </head>
+  <body>
+    <form id="form">
+      <div>
+        <label for="gladia_key">Gladia API key</label>
+        <input
+          id="gladia_key"
+          name="gladia_key"
+          type="text"
+          placeholder="Gladia API key"
+          required
+        />
+      </div>
+      <div>
+        <label for="audio">Audio file</label>
+        <input
+          id="audio"
+          name="audio"
+          type="file"
+          accept="audio/wav, audio/x-wav"
+          required
+        />
+      </div>
+      <div>
+        <label>
+          <input
+            type="checkbox"
+            id="sentiment_analysis"
+            name="sentiment_analysis"
+          />
+          Enable Sentiment Analysis (received in API response)
+        </label>
+      </div>
+      <div>
+        <label>
+          <input
+            type="checkbox"
+            id="summarization_checkbox"
+            name="summarization_checkbox"
+          />
+          Enable Summarization
+        </label>
+      </div>
+      <div id="summarization_options" style="display: none">
+        <label for="summarization">Choose Summarization Type</label>
+        <select id="summarization" name="summarization">
+          <option value="general">General</option>
+          <option value="bullet_points" selected>Bullet Points</option>
+          <option value="concise">Concise</option>
+        </select>
+      </div>
+      <div>
+        <label>
+          <input type="checkbox" id="chapterization" name="chapterization" />
+          Enable Chapterization
+        </label>
+      </div>
+      <div>
+        <label>
+          <input type="checkbox" id="callback" name="callback" />
+          Enable Callback (use webhooks instead in production)
+        </label>
+      </div>
+      <div id="callback_url_container" style="display: none">
+        <label for="callback_url">Callback URL</label>
+        <input
+          id="callback_url"
+          name="callback_url"
+          type="text"
+          placeholder="https://your-callback-url.com"
+        />
+      </div>
+      <button type="submit">Start streaming</button>
+    </form>
+
+    <div id="result" style="display: none">
+      <audio id="audio-player"></audio>
+      <div id="finals"></div>
+      <div style="color: red" id="partials"></div>
+    </div>
+
+    <script src="audio-websocket.js"></script>
+    <script>
+      const form = document.querySelector("#form");
+      const submitButton = document.querySelector('button[type="submit"]');
+      const resultContainer = document.querySelector("#result");
+      const audioPlayer = document.querySelector("#audio-player");
+      const finalsContainer = document.querySelector("#finals");
+      const partialsContainer = document.querySelector("#partials");
+
+      const callbackCheckbox = document.getElementById("callback");
+      const callbackUrlContainer = document.getElementById(
+        "callback_url_container"
+      );
+      callbackCheckbox.addEventListener("change", function () {
+        callbackUrlContainer.style.display = this.checked ? "block" : "none";
+      });
+
+      const summarizationCheckbox = document.getElementById(
+        "summarization_checkbox"
+      );
+      const summarizationOptions = document.getElementById(
+        "summarization_options"
+      );
+      summarizationCheckbox.addEventListener("change", function () {
+        summarizationOptions.style.display = this.checked ? "block" : "none";
+      });
+
+      form.addEventListener("submit", async (evt) => {
+        evt.preventDefault();
+
+        const formData = new FormData(form);
+        const gladiaKey = formData.get("gladia_key");
+        const audioFile = formData.get("audio");
+
+        submitButton.setAttribute("disabled", "true");
+        submitButton.textContent = "Waiting for connection...";
+        finalsContainer.innerHTML = "";
+        partialsContainer.textContent = "...";
+        resultContainer.style.display = "block";
+
+        const sentimentAnalysisEnabled =
+          formData.get("sentiment_analysis") !== null;
+        const chapterizationEnabled = formData.get("chapterization") !== null;
+
+        const summarizationEnabled =
+          formData.get("summarization_checkbox") !== null;
+        const summarizationType = summarizationEnabled
+          ? formData.get("summarization")
+          : null;
+
+        const callbackEnabled = formData.get("callback") !== null;
+        const callbackURL = callbackEnabled
+          ? formData.get("callback_url")
+          : null;
+
+        await startStreaming(gladiaKey, audioFile, {
+          audioPlayer,
+          finalsContainer,
+          partialsContainer,
+          submitButton,
+          sentimentAnalysisEnabled,
+          chapterizationEnabled,
+          summarizationEnabled,
+          summarizationType,
+          callbackEnabled,
+          callbackURL,
+        });
+      });
+    </script>
+  </body>
+</html>
